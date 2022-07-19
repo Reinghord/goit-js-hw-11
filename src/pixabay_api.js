@@ -2,7 +2,6 @@
 import axios from 'axios';
 
 //Vars
-const axios = require('axios').default;
 let PAGE_COUNTER = 1;
 
 //Export basic logic to work with API
@@ -33,4 +32,3 @@ export default async function getUser(searchQ) {
 export const resetPage = () => {
   PAGE_COUNTER = 1;
 };
-//random change for github
