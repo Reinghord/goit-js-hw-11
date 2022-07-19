@@ -33,3 +33,4 @@ export default async function getUser(searchQ) {
 export const resetPage = () => {
   PAGE_COUNTER = 1;
 };
+//random change for github
