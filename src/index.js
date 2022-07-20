@@ -29,14 +29,12 @@ searchForm.addEventListener('submit', async e => {
     clearGallery();
     resetPage();
     resetResponseCounter();
-
     await doMagic();
     lightboxRefresh();
     smoothScroll();
+    //All logic for Infinite Scroll
+    infiniteScroll();
   }
-
-  //Event Listener for Infinite Scroll
-  infiniteScroll();
 });
 
 //function to clear gallery
