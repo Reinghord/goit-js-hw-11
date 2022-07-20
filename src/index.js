@@ -13,6 +13,7 @@ const { searchForm, galleryDiv, moreBtn } = {
   moreBtn: document.querySelector('.load-more'),
 };
 let searchText;
+const infiniteTrottle = throttle(infiniteLogic, 500);
 
 //Initialize lightbox
 var lightbox = new SimpleLightbox('.gallery a', {
@@ -61,9 +62,10 @@ function lightboxRefresh() {
 async function doMagic() {
   try {
     const response = await getUser(searchText);
-    // if (response.data.hits.length < 40) {
-    //   window.removeEventListener('scroll', throttle(infiniteLogic, 500));
-    // }
+
+    if (response.data.hits.length < 40) {
+      window.removeEventListener('scroll', infiniteTrottle);
+    }
     const validation = onSuccessGet(response);
     const preparation = prepareMarkup(response);
     const magic = createMarkup(preparation, galleryDiv);
@@ -78,8 +80,12 @@ function infiniteScroll() {
 }
 
 function infiniteListener() {
-  window.addEventListener('scroll', throttle(infiniteLogic, 500));
+  window.addEventListener('scroll', infiniteTrottle);
 }
+
+// function infiniteThrottle() {
+//   throttle(infiniteLogic, 500);
+// }
 
 function infiniteLogic() {
   var scrollHeight = document.documentElement.scrollHeight;
