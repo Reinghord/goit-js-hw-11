@@ -1,6 +1,6 @@
 //function to create markup in 1 DOM manipulation
 export default function prepareMarkup(response) {
-  return (markup = response.data.hits.map(object => {
+  return response.data.hits.map(object => {
     return `<a class="photo-card" href="${object.largeImageURL}">
   <img src="${object.webformatURL}" alt="${object.tags}" loading="lazy" />
   <div class="info">
@@ -18,7 +18,7 @@ export default function prepareMarkup(response) {
     </p>
   </div>
 </a>`;
-  }));
+  });
 }
 
 //
