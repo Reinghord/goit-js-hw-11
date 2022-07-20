@@ -1,6 +1,7 @@
 //Imports
-import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import getUser, { resetPage } from './pixabay_api';
+import onSuccessGet, { resetResponseCounter } from './response';
+import prepareMarkup, { createMarkup } from './markup';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import throttle from 'lodash.throttle';
@@ -12,7 +13,6 @@ const { searchForm, galleryDiv, moreBtn } = {
   moreBtn: document.querySelector('.load-more'),
 };
 let searchText;
-let RESPONSE_COUNTER = 1;
 
 //Initialize lightbox
 var lightbox = new SimpleLightbox('.gallery a', {
@@ -24,83 +24,20 @@ var lightbox = new SimpleLightbox('.gallery a', {
 searchForm.addEventListener('submit', async e => {
   e.preventDefault();
   // hideLoadMore();
-  clearGallery();
-  searchText = e.target.elements.searchQuery.value;
-  resetPage();
-  resetResponseCounter();
-  const response = await getUser(searchText);
-  const validation = onSuccessGet(response);
-  const magic = createMarkup(validation);
-  lightboxRefresh();
-  smoothScroll();
+  searchText = e.target.elements.searchQuery.value.trim('');
+  if (searchText) {
+    clearGallery();
+    resetPage();
+    resetResponseCounter();
+
+    await doMagic();
+    lightboxRefresh();
+    smoothScroll();
+  }
 
   //Event Listener for Infinite Scroll
-  setTimeout(() => {
-    window.addEventListener(
-      'scroll',
-      throttle(async function () {
-        var scrollHeight = document.documentElement.scrollHeight;
-        var scrollTop = document.documentElement.scrollTop;
-        var clientHeight = document.documentElement.clientHeight;
-        if (scrollTop + clientHeight > scrollHeight - 500) {
-          const response = await getUser(searchText);
-          const validation = onSuccessGet(response);
-          const magic = createMarkup(validation);
-          lightboxRefresh();
-        }
-      }, 500)
-    );
-  }, 1000);
+  infiniteScroll();
 });
-
-//function to validate response for amount of hits before creating markup
-function onSuccessGet(response) {
-  if (response.data.total === 0) {
-    Notify.failure(
-      'Sorry, there are no images matching your search query. Please try again.'
-    );
-    throw new Error(error);
-  }
-
-  if (RESPONSE_COUNTER === 1) {
-    Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
-  }
-
-  if (response.data.hits.length < 40) {
-    Notify.info(`We're sorry, but you've reached the end of search results.`);
-    // hideLoadMore();
-    return response.data.hits;
-  }
-
-  // showLoadMore();
-  RESPONSE_COUNTER += 1;
-  return response.data.hits;
-}
-
-//function to create markup in 1 DOM manipulation
-function createMarkup(data) {
-  console.log(data);
-  const markup = data.map(object => {
-    return `<a class="photo-card" href="${object.largeImageURL}">
-  <img src="${object.webformatURL}" alt="${object.tags}" loading="lazy" />
-  <div class="info">
-    <p class="info-item">
-      <b>Likes</b></br> ${object.likes}
-    </p>
-    <p class="info-item">
-      <b>Views</b></br> ${object.views}
-    </p>
-    <p class="info-item">
-      <b>Comments</b></br> ${object.comments}
-    </p>
-    <p class="info-item">
-      <b>Downloads</b></br> ${object.downloads}
-    </p>
-  </div>
-</a>`;
-  });
-  galleryDiv.insertAdjacentHTML('beforeend', markup.join(''));
-}
 
 //function to clear gallery
 function clearGallery() {
@@ -122,6 +59,40 @@ function lightboxRefresh() {
   lightbox.refresh();
 }
 
+//Logic about fetching, response handling and markup creation
+async function doMagic() {
+  try {
+    const response = await getUser(searchText);
+    // if (response.data.hits.length < 40) {
+    //   window.removeEventListener('scroll', throttle(infiniteLogic, 500));
+    // }
+    const validation = onSuccessGet(response);
+    const preparation = prepareMarkup(response);
+    const magic = createMarkup(preparation, galleryDiv);
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
+//function for infinite scroll
+function infiniteScroll() {
+  setTimeout(infiniteListener, 1000);
+}
+
+function infiniteListener() {
+  window.addEventListener('scroll', throttle(infiniteLogic, 500));
+}
+
+function infiniteLogic() {
+  var scrollHeight = document.documentElement.scrollHeight;
+  var scrollTop = document.documentElement.scrollTop;
+  var clientHeight = document.documentElement.clientHeight;
+  if (scrollTop + clientHeight > scrollHeight - 500) {
+    doMagic();
+    lightboxRefresh();
+  }
+}
+
 //function for smooth scrolling
 function smoothScroll() {
   const y = galleryDiv.firstElementChild.getBoundingClientRect().y;
@@ -129,9 +100,4 @@ function smoothScroll() {
     top: `${y}`,
     behavior: 'smooth',
   });
-}
-
-//Export for function to reset PAGE_COUNTER
-function resetResponseCounter() {
-  RESPONSE_COUNTER = 1;
 }

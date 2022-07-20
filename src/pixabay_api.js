@@ -24,7 +24,7 @@ export default async function getUser(searchQ) {
 
     return response;
   } catch (error) {
-    console.error(error);
+    throw new Error(error);
   }
 }
 
